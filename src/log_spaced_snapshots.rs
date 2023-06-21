@@ -20,8 +20,8 @@ use std::{collections::BTreeMap, fmt::Debug};
 /// # Example
 ///
 /// ```no_run
-/// use movable_tree::log_spaced_snapshots::CachedSnapshots;
-/// let mut cache: CachedSnapshots<usize, usize> = CachedSnapshots::new(3);
+/// use movable_tree::log_spaced_snapshots::LogSpacedSnapshots;
+/// let mut cache: LogSpacedSnapshots<usize, usize> = LogSpacedSnapshots::new(3);
 /// for i in 0..10000 {
 ///     cache.push(i, i);
 /// }
@@ -39,13 +39,13 @@ use std::{collections::BTreeMap, fmt::Debug};
 ///
 ///
 #[derive(Debug)]
-pub struct CachedSnapshots<K, V> {
+pub struct LogSpacedSnapshots<K, V> {
     keys: Vec<K>,
     cache: BTreeMap<usize, V>,
     d: usize,
 }
 
-impl<K, T> CachedSnapshots<K, T> {
+impl<K, T> LogSpacedSnapshots<K, T> {
     pub fn new(d: usize) -> Self {
         Self {
             keys: Default::default(),
@@ -55,7 +55,7 @@ impl<K, T> CachedSnapshots<K, T> {
     }
 }
 
-impl<K: Ord, T> CachedSnapshots<K, T> {
+impl<K: Ord, T> LogSpacedSnapshots<K, T> {
     /// Push a new snapshot.
     /// The new version must be greatest version.
     pub fn push(&mut self, version: K, value: T) {
@@ -73,10 +73,7 @@ impl<K: Ord, T> CachedSnapshots<K, T> {
     }
 
     /// Pop the history until the latest snapshot's version <= k
-    pub fn pop_till_snapshot_lte(&mut self, k: &K) -> Option<(&K, &T)>
-    where
-        T: Debug,
-    {
+    pub fn pop_till_snapshot_lte(&mut self, k: &K) -> Option<(&K, &T)> {
         let first_to_remove = match self.keys.binary_search(k) {
             Ok(n) => n + 1,
             Err(n) => n,
@@ -97,7 +94,7 @@ impl<K: Ord, T> CachedSnapshots<K, T> {
     }
 }
 
-impl<K, T> Default for CachedSnapshots<K, T> {
+impl<K, T> Default for LogSpacedSnapshots<K, T> {
     fn default() -> Self {
         Self::new(2)
     }
@@ -139,7 +136,7 @@ mod test {
 
     #[test]
     fn snapshot() {
-        let mut cache: CachedSnapshots<usize, usize> = CachedSnapshots::new(3);
+        let mut cache: LogSpacedSnapshots<usize, usize> = LogSpacedSnapshots::new(3);
         for i in 0..10000 {
             cache.push(i, i);
         }

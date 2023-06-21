@@ -11,10 +11,25 @@ pub struct Forest<ID> {
     map: ImHashMap<ID, TreeNode<ID>>,
 }
 
+impl<ID: Hash + PartialEq + Eq> PartialEq for Forest<ID> {
+    fn eq(&self, other: &Self) -> bool {
+        self.map == other.map
+    }
+}
+
+impl<ID: Hash + PartialEq + Eq + Debug> Debug for Forest<ID> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Forest").field("map", &self.map).finish()
+    }
+}
+
+impl<ID: Hash + PartialEq + Eq> Eq for Forest<ID> {}
+
 /// Immutable tree node.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 struct TreeNode<ID> {
     pub(crate) parent: Option<ID>,
+    pub(crate) deleted: bool,
 }
 
 #[derive(Debug, Clone)]
@@ -37,7 +52,13 @@ impl<ID: IdTrait> Forest<ID> {
         // but it can be inferred.
         // So we cannot travel the forest cheaply. It needs O(n) to construct the trees first.
         if parent_id.is_none() {
-            self.map.insert(node_id, TreeNode { parent: None });
+            self.map.insert(
+                node_id,
+                TreeNode {
+                    parent: None,
+                    deleted: false,
+                },
+            );
             return Ok(());
         }
 
@@ -59,6 +80,7 @@ impl<ID: IdTrait> Forest<ID> {
                 node_id,
                 TreeNode {
                     parent: Some(parent_id),
+                    deleted: false,
                 },
             );
         }
@@ -78,6 +100,10 @@ impl<ID: IdTrait> Forest<ID> {
                 None => return false,
             }
         }
+    }
+
+    pub fn delete(&mut self, node_id: ID) {
+        self.map.get_mut(&node_id).unwrap().deleted = true;
     }
 }
 
