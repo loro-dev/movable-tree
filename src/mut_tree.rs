@@ -1,14 +1,13 @@
-use im::HashMap as ImHashMap;
 use std::{fmt::Debug, hash::Hash};
+
+use fxhash::FxHashMap;
 
 pub trait IdTrait: Hash + Eq + Clone + Copy + Debug {}
 impl<T: Hash + Eq + Clone + Copy + Debug> IdTrait for T {}
 
-///
-///
 #[derive(Clone)]
 pub struct Forest<ID> {
-    map: ImHashMap<ID, TreeNode<ID>>,
+    map: FxHashMap<ID, TreeNode<ID>>,
 }
 
 impl<ID: Hash + PartialEq + Eq> PartialEq for Forest<ID> {
@@ -51,7 +50,9 @@ impl<ID: IdTrait> Forest<ID> {
     /// Return Err when the action will cause cycle in tree
     pub fn mov(&mut self, node_id: ID, parent_id: Option<ID>) -> Result<(), Error> {
         let mut deleted = false;
+        let mut contained = false;
         if let Some(node) = self.map.get(&node_id) {
+            contained = true;
             if node.deleted {
                 deleted = true;
             }
@@ -77,7 +78,8 @@ impl<ID: IdTrait> Forest<ID> {
             "Parent id {:?} does not exist.",
             parent_id
         );
-        if self.map.contains_key(&node_id) {
+
+        if contained {
             if self.is_ancestor_of(node_id, parent_id) {
                 return Err(Error::CyclicMoveErr);
             }
@@ -97,6 +99,7 @@ impl<ID: IdTrait> Forest<ID> {
         Ok(())
     }
 
+    #[inline(never)]
     fn is_ancestor_of(&self, maybe_ancestor: ID, node_id: ID) -> bool {
         if maybe_ancestor == node_id {
             return true;

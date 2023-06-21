@@ -15,7 +15,7 @@ pub fn main() {
     forest.mov(0, None).unwrap();
     for i in 0..1_000_000 {
         history.push(forest.clone());
-        forest.mov(i + 1, Some(i)).unwrap();
+        forest.mov(i + 1, None).unwrap();
     }
     drop(profiler);
     spawn(move || drop(history));

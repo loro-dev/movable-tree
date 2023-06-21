@@ -1,4 +1,4 @@
-use im::HashMap;
+use fxhash::FxHashMap;
 
 use crate::{log_spaced_snapshots::LogSpacedSnapshots, Forest};
 
@@ -41,7 +41,7 @@ pub enum OpContent {
     Delete(ID),
 }
 
-type OpLog = HashMap<Client, Vec<Op>>;
+type OpLog = FxHashMap<Client, Vec<Op>>;
 type Client = u64;
 type Lamport = u32;
 
