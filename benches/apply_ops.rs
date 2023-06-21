@@ -1,7 +1,7 @@
 use std::time::Instant;
 
 use criterion::{criterion_main, Criterion};
-use movable_tree::Forest;
+use movable_tree::{crdt::Crdt, Forest};
 use rand::{rngs::StdRng, Rng};
 
 pub fn benches() {
@@ -40,7 +40,7 @@ pub fn benches() {
 
     let mut group = criterion.benchmark_group("Random n moves in tree with 10K nodes");
     group.sample_size(10);
-    const SIZE: usize = 10_000;
+    let SIZE: usize = 10_000;
     group.bench_function("n = 10K", |b| {
         const N: usize = 10_000;
         let mut source_forest: Forest<usize> = Forest::new();
@@ -62,6 +62,41 @@ pub fn benches() {
             }
             start.elapsed()
         });
+    });
+
+    drop(group);
+    let mut group = criterion.benchmark_group("CRDT n moves with 10K nodes");
+    group.sample_size(10);
+    bench_crdt(&mut group, "n = 10K", SIZE, 10_000);
+    bench_crdt(&mut group, "n = 100K", SIZE, 100_000);
+    bench_crdt(&mut group, "n = 1M", SIZE, 1_000_000);
+}
+
+fn bench_crdt(
+    group: &mut criterion::BenchmarkGroup<'_, criterion::measurement::WallTime>,
+    name: &str,
+    size: usize,
+    n: usize,
+) {
+    group.bench_function(name, |b| {
+        let mut crdt: Crdt = Crdt::new(1);
+        let mut ids = Vec::new();
+        for _ in 0..size {
+            ids.push(crdt.new_node(None));
+        }
+
+        b.iter_batched(
+            || crdt.clone(),
+            |mut crdt: Crdt| {
+                let mut rng: StdRng = rand::SeedableRng::seed_from_u64(0);
+                for _ in 0..n {
+                    let i = rng.gen::<usize>() % size;
+                    let j = rng.gen::<usize>() % size;
+                    crdt.mov(ids[i], Some(ids[j]));
+                }
+            },
+            criterion::BatchSize::PerIteration,
+        );
     });
 }
 

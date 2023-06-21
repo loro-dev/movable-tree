@@ -38,7 +38,7 @@ use std::{collections::BTreeMap, fmt::Debug};
 /// ```
 ///
 ///
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct LogSpacedSnapshots<K, V> {
     keys: Vec<K>,
     cache: BTreeMap<usize, V>,
@@ -91,6 +91,10 @@ impl<K: Ord, T> LogSpacedSnapshots<K, T> {
         self.keys
             .last()
             .map(|k| (k, self.cache.last_key_value().unwrap().1))
+    }
+
+    pub fn cache_size(&self) -> usize {
+        self.cache.len()
     }
 }
 

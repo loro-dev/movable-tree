@@ -57,3 +57,12 @@ Tested on M1.
 | 10K  | 3 MB         | 19 ms      | 9 ms          | 1 ms          |
 | 100K | 39 MB        | 337 ms     | 197 ms        | 30 ms         |
 | 1M   | 450 MB       | 7.6 s      | 3 s           | 426 ms        |
+
+By using log-spaced snapshots to store the history, the duration of applying 1M
+ops for tree crdt is
+
+| n    | Total time |
+| :--- | :--------- |
+| 10K  | 18 ms      |
+| 100K | 680 ms     |
+| 1M   | 10.778 s   |

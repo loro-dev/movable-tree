@@ -1,5 +1,3 @@
-use std::collections::BinaryHeap;
-
 use im::HashMap;
 
 use crate::{log_spaced_snapshots::LogSpacedSnapshots, Forest};
@@ -47,11 +45,12 @@ type OpLog = HashMap<Client, Vec<Op>>;
 type Client = u64;
 type Lamport = u32;
 
+#[derive(Debug, Clone)]
 pub struct Crdt {
     forest: Forest<ID>,
     cache: LogSpacedSnapshots<ID, Forest<ID>>,
     client: Client,
-    greatest_lamport: Lamport,
+    next_lamport: Lamport,
     log: OpLog,
     /// ops sorted by ID
     sorted_ops: Vec<Op>,
@@ -65,7 +64,7 @@ impl Crdt {
             client,
             forest: Default::default(),
             cache: Default::default(),
-            greatest_lamport: 0,
+            next_lamport: 0,
             log: Default::default(),
             sorted_ops: Default::default(),
             applied_end: 0,
@@ -79,10 +78,10 @@ impl Crdt {
 
     fn new_id(&mut self) -> ID {
         let id = ID {
-            lamport: self.greatest_lamport,
+            lamport: self.next_lamport,
             client: self.client,
         };
-        self.greatest_lamport += 1;
+        self.next_lamport += 1;
         id
     }
 
@@ -147,8 +146,8 @@ impl Crdt {
                 for op in &ops[self_start..] {
                     entry.push(op.clone());
                     ans.push(op.clone());
-                    if op.id.lamport > self.greatest_lamport {
-                        self.greatest_lamport = op.id.lamport;
+                    if op.id.lamport >= self.next_lamport {
+                        self.next_lamport = op.id.lamport + 1;
                     }
                 }
             }
@@ -249,7 +248,16 @@ pub mod fuzz {
     use Action::*;
     #[test]
     fn fuzz_0() {
-        fuzzing(4, vec![Sync(175, 175)])
+        fuzzing(
+            4,
+            vec![
+                Mov(11, 11, 11),
+                Sync(38, 135),
+                Del(135, 135),
+                Del(134, 0),
+                Mov(0, 0, 0),
+            ],
+        )
     }
 }
 
@@ -271,5 +279,20 @@ mod test {
         b.mov(ids[3], Some(ids[1]));
         a.merge(&b);
         assert_eq!(a.forest(), b.forest());
+    }
+
+    #[test]
+    fn test_cache_size() {
+        let mut a = Crdt::new(1);
+        let mut ids = Vec::new();
+        for _ in 0..10 {
+            ids.push(a.new_node(None));
+        }
+
+        for i in 0..1_000 {
+            a.mov(ids[i % 10], ids[(i + 1) % 10].into());
+        }
+
+        assert!(a.cache.cache_size() < 20);
     }
 }

@@ -89,11 +89,16 @@ impl<ID: IdTrait> Forest<ID> {
     }
 
     fn is_ancestor_of(&self, maybe_ancestor: ID, node_id: ID) -> bool {
+        if maybe_ancestor == node_id {
+            return true;
+        }
+
         let mut node_id = node_id;
         loop {
             let node = self.map.get(&node_id).unwrap();
             match node.parent {
                 Some(parent_id) if parent_id == maybe_ancestor => return true,
+                Some(parent_id) if parent_id == node_id => panic!("loop detected"),
                 Some(parent_id) => {
                     node_id = parent_id;
                 }
